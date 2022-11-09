@@ -1,4 +1,4 @@
-### Numerical simulations for paper https://arxiv.org/abs/2107.10706 (accepted at NeurIPS 2021)
+### Replication of optimization paper results. Sirius 2022
 
 Minimization and saddle-point algorithms. Simulations for centralized and decentralized systems.
 
