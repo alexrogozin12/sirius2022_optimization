@@ -3,7 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def calc_abs_value(X):
-    return np.sqrt((X**2).sum())
+    return np.sqrt((X[0]**2).sum())
+
+def calc_X_diff(X_curr, X_prev, W, F, calc_delta_Fx):
+    return calc_abs_value(X_prev - X_curr)
+
+def calc_F_diff(X_curr, X_prev, W, F, calc_delta_Fx):
+    return calc_abs_value(F(W, X_prev) - F(W, X_curr))
+
+def calc_diff_delta_Fx(X_curr, X_prev, W, F, calc_delta_Fx):
+    return calc_abs_value(calc_delta_Fx(W, X_curr))
 
 def print_log(i, X, S, abs_delta_Fx):
     print(i, "\tX:\t", np.transpose(X))
@@ -51,7 +60,8 @@ def calc_next_z_3(W, Y, Z, S, alpha, theta, mu):
 def calc_curr_y_3(Z, X, theta):
     return np.multiply(Z, theta) + np.multiply(X, (1 - theta))
 
-def gradient_tracking_1(W, X0, e, alpha, calc_delta_Fx,
+def gradient_tracking_1(W, X0, e, alpha,  F, calc_delta_Fx,
+        calc_error_function = 'X_diff', # 'F_diff', 'diff_delta_Fx'
         calc_next_x = calc_next_x_1, 
         calc_curr_s = calc_curr_s_1,
         max_iter=100,
@@ -77,7 +87,8 @@ def gradient_tracking_1(W, X0, e, alpha, calc_delta_Fx,
     if make_graph: make_graph(abs_delta_Fx)
     return X
 
-def gradient_tracking_2(W, X0, e, alpha, theta, calc_delta_Fx, 
+def gradient_tracking_2(W, X0, e, alpha, theta,  F, calc_delta_Fx,
+        calc_error_function = 'X_diff', # 'F_diff', 'diff_delta_Fx'
         calc_next_x = calc_next_x_2, 
         calc_curr_y = calc_curr_y_2, 
         calc_next_z = calc_next_z_2, 
@@ -111,7 +122,8 @@ def gradient_tracking_2(W, X0, e, alpha, theta, calc_delta_Fx,
     if need_graph: make_graph(abs_delta_Fx)
     return X
 
-def gradient_tracking_3(W, X0, e, alpha, theta, mu, calc_delta_Fx,
+def gradient_tracking_3(W, X0, e, alpha, theta, mu, F, calc_delta_Fx,
+        calc_error_function = 'X_diff', # 'F_diff', 'diff_delta_Fx'
         calc_next_x = calc_next_x_3, 
         calc_curr_y = calc_curr_y_3, 
         calc_next_z = calc_next_z_3, 
@@ -120,8 +132,12 @@ def gradient_tracking_3(W, X0, e, alpha, theta, mu, calc_delta_Fx,
         use_logging=False,
         need_graph=False):
 
+    calc_error = calc_X_diff
+    if calc_error_function == 'F_diff': calc_error = calc_F_diff
+    if calc_error_function == 'diff_delta_Fx': calc_error = calc_diff_delta_Fx
+
     Y0 = Z0 = X0
-    S0 = calc_delta_Fx_3(W, X0)
+    S0 = calc_delta_Fx(W, X0)
 
     Y = calc_curr_y_3(Z0, X0, theta)
     S = calc_curr_s_3(W, S0, Y, Y0, calc_delta_Fx)
@@ -129,7 +145,7 @@ def gradient_tracking_3(W, X0, e, alpha, theta, mu, calc_delta_Fx,
     Z = W * Z0 - (alpha / ( theta + mu * alpha) ) * S
 
     i = 0
-    abs_delta_Fx = [calc_abs_value(calc_delta_Fx_3(W, X))]
+    abs_delta_Fx = [calc_error(X, X0, W, F, calc_delta_Fx)]
     if use_logging: print_log(i, X, S, abs_delta_Fx)
     while abs_delta_Fx[-1] > e:
         Y0 = Y
@@ -137,7 +153,7 @@ def gradient_tracking_3(W, X0, e, alpha, theta, mu, calc_delta_Fx,
         S  = calc_curr_s_3(W, S0, Y, Y0, calc_delta_Fx)
         X  = calc_next_x_3(W, X, alpha, S)
         Z  = calc_next_z_3(W, Y, Z, S, alpha, theta, mu)
-        abs_delta_Fx.append(calc_abs_value(calc_delta_Fx_3(W, X)[-1]))
+        abs_delta_Fx.append(calc_error(X, X0, W, F, calc_delta_Fx))
 
         i+=1
         if use_logging: print_log(i, X, S, abs_delta_Fx[-1])
@@ -145,5 +161,5 @@ def gradient_tracking_3(W, X0, e, alpha, theta, mu, calc_delta_Fx,
     if need_graph: make_graph(abs_delta_Fx)
     return X
 
-def gradient_tracking(W, X0, e, alpha, theta, mu, calc_delta_Fx, max_iter=100, use_logging=False, need_graph=False):
-    return gradient_tracking_3(W, X0, e, alpha, theta, mu, calc_delta_Fx, max_iter=max_iter, use_logging=use_logging, need_graph=need_graph)
+def gradient_tracking(W, X0, e, alpha, theta, mu, F, calc_delta_Fx, calc_error_function, max_iter=100, use_logging=False, need_graph=False):
+    return gradient_tracking_3(W, X0, e, alpha, theta, mu, F, calc_delta_Fx, calc_error_function, max_iter=max_iter, use_logging=use_logging, need_graph=need_graph)
