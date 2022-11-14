@@ -5,7 +5,8 @@ import networkx as nx
 from networkx.generators.random_graphs import erdos_renyi_graph, complete_graph
 from networkx.generators import circulant_graph
 
-def vanish_random_edges_from_graph(G, occupancy=0.0, vanish_rate = 0):
+# returns np.matrix
+def vanish_random_edges_from_graph(G : nx.Graph, occupancy : float = 0.0, vanish_rate : int = 0):
     if occupancy*vanish_rate != 0: raise ValueError()
     edges = list(G.edges)
     num_of_edges = len(edges)
@@ -28,30 +29,36 @@ def vanish_random_edges_from_graph(G, occupancy=0.0, vanish_rate = 0):
 
     return nx.adjacency_matrix(G).todense()
 
-def vanish_random_edges_from_matrix(M, occupancy=0.0, vanish_rate = 0):
+# returns np.matrix
+def vanish_random_edges_from_matrix(M : np.matrix, occupancy : float = 0.0, vanish_rate : int = 0):
     G = nx.from_numpy_matrix(M)
     M = vanish_random_edges_from_graph(G, occupancy, vanish_rate)
     return fill_metropolis_weigts(M)
 
-def vanish_random_edge_from_matrix(M):
+# returns np.matrix
+def vanish_random_edge_from_matrix(M : np.matrix):
     G = nx.from_numpy_matrix(M)
     M = vanish_random_edges_from_graph(G, occupancy=0.0, vanish_rate=1)
     return fill_metropolis_weigts(M)
 
-def make_cirvular_graph(N):
+# returns np.matrix
+def make_circular_graph_matrix(N : int):
     G = nx.circulant_graph(N, [1])
     return nx.adjacency_matrix(G).todense()
 
-def make_complete_graph(N):
+# returns np.matrix
+def make_complete_graph_matrix(N : int):
     G = nx.complete_graph(N)
     return nx.adjacency_matrix(G).todense()
 
-def make_random_graph(N, occupancy=0.0, vanish_rate = 0):
+# returns np.matrix
+def make_random_graph_matrix(N : int, occupancy : float = 0.0, vanish_rate : int = 0):
     G = nx.complete_graph(N)
     M = vanish_random_edges_from_graph(G, occupancy, vanish_rate)
     return fill_metropolis_weigts(M)
 
-def fill_metropolis_weigts(M):
+# returns np.matrix
+def fill_metropolis_weigts(M : np.matrix):
     n_links = []
     for i in range(len(M)):
         n_links.append(np.count_nonzero(M[i]))
@@ -63,7 +70,7 @@ def fill_metropolis_weigts(M):
         G.add_edge(i, i, weight=(1 - np.sum(M[i])))
     return nx.adjacency_matrix(G).todense()
 
-def make_graph_img(M, num_of_lines = 5, fig_size=(5, 5)):
+def make_graph_img(M : np.matrix, num_of_lines : int = 5, fig_size : tuple = (5, 5) ):
     G = nx.from_numpy_matrix(M)
     _w = []
     _step = 1 / num_of_lines
