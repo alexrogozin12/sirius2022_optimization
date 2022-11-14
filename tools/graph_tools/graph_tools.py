@@ -5,8 +5,7 @@ import networkx as nx
 from networkx.generators.random_graphs import erdos_renyi_graph, complete_graph
 from networkx.generators import circulant_graph
 
-# returns np.matrix
-def vanish_random_edges_from_graph(G : nx.Graph, occupancy : float = 0.0, vanish_rate : int = 0):
+def vanish_random_edges_from_graph(G : nx.Graph, occupancy : float = 0.0, vanish_rate : int = 0) -> np.matrix:
     if occupancy*vanish_rate != 0: raise ValueError()
     edges = list(G.edges)
     num_of_edges = len(edges)
@@ -29,36 +28,30 @@ def vanish_random_edges_from_graph(G : nx.Graph, occupancy : float = 0.0, vanish
 
     return nx.adjacency_matrix(G).todense()
 
-# returns np.matrix
-def vanish_random_edges_from_matrix(M : np.matrix, occupancy : float = 0.0, vanish_rate : int = 0):
+def vanish_random_edges_from_matrix(M : np.matrix, occupancy : float = 0.0, vanish_rate : int = 0) -> np.matrix:
     G = nx.from_numpy_matrix(M)
     M = vanish_random_edges_from_graph(G, occupancy, vanish_rate)
     return fill_metropolis_weigts(M)
 
-# returns np.matrix
-def vanish_random_edge_from_matrix(M : np.matrix):
+def vanish_random_edge_from_matrix(M : np.matrix) -> np.matrix:
     G = nx.from_numpy_matrix(M)
     M = vanish_random_edges_from_graph(G, occupancy=0.0, vanish_rate=1)
     return fill_metropolis_weigts(M)
 
-# returns np.matrix
-def make_circular_graph_matrix(N : int):
+def make_circular_graph_matrix(N : int) -> np.matrix:
     G = nx.circulant_graph(N, [1])
     return nx.adjacency_matrix(G).todense()
 
-# returns np.matrix
-def make_complete_graph_matrix(N : int):
+def make_complete_graph_matrix(N : int) -> np.matrix:
     G = nx.complete_graph(N)
     return nx.adjacency_matrix(G).todense()
 
-# returns np.matrix
-def make_random_graph_matrix(N : int, occupancy : float = 0.0, vanish_rate : int = 0):
+def make_random_graph_matrix(N : int, occupancy : float = 0.0, vanish_rate : int = 0) -> np.matrix:
     G = nx.complete_graph(N)
     M = vanish_random_edges_from_graph(G, occupancy, vanish_rate)
     return fill_metropolis_weigts(M)
 
-# returns np.matrix
-def fill_metropolis_weigts(M : np.matrix):
+def fill_metropolis_weigts(M : np.matrix) -> np.matrix:
     n_links = []
     for i in range(len(M)):
         n_links.append(np.count_nonzero(M[i]))
