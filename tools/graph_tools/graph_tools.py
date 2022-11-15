@@ -38,6 +38,24 @@ def vanish_random_edge_from_matrix(M : np.matrix) -> np.matrix:
     M = vanish_random_edges_from_graph(G, occupancy=0.0, vanish_rate=1)
     return fill_metropolis_weigts(M)
 
+def add_random_edge_to_matrix(M : np.matrix) -> np.matrix:
+    G = nx.from_numpy_matrix(M)
+    edges = [i for i in range(len(M))]
+    e_len = len(M)
+    while True:
+        e_1 = edges[random.randint(0, e_len  - 1)]
+        edges_2 = [i for i in range(e_len) if M[e_1, i] == 0]
+        e_len_2 = len(edges_2)
+        if e_len_2 >= 1:
+            e_2 = edges_2[random.randint(0, e_len_2 - 1)]
+            G.add_edge(e_1, e_2, weight=1)
+            break
+        else:
+            edges.remove(e_1)
+            continue
+    M = nx.adjacency_matrix(G).todense()
+    return fill_metropolis_weigts(M)
+
 def make_circular_graph_matrix(N : int) -> np.matrix:
     G = nx.circulant_graph(N, [1])
     return nx.adjacency_matrix(G).todense()
