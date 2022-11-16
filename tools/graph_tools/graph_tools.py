@@ -54,6 +54,8 @@ def make_random_graph_matrix(N : int, occupancy : float = 0.0, vanish_rate : int
 def fill_metropolis_weigts(M : np.matrix) -> np.matrix:
     n_links = []
     for i in range(len(M)):
+        M[i, i] = 0
+    for i in range(len(M)):
         n_links.append(np.count_nonzero(M[i]))
     G = nx.from_numpy_matrix(M)
     for (u, v) in G.edges():
