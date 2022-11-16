@@ -63,13 +63,13 @@ class DAPDG(BaseDecentralizedMethod):
 
         
     def init_parameters(self, mu, mu_xy, L, L_xy, L_y=0):
-        self.theta = 1 / (1 / self.sigma + 0.5)
         self.alpha = mu
         delta = max(mu_xy / (8 * np.sqrt(mu * L)), np.sqrt(L_y / L))
         self.eta = min(0.25 / (mu + L * seft.sigma), 0.25 * delta / L_xy)
         self.beta = min(1 / (2 * L), 1 / (2 * eta * L_xy ** 2))
         rho_b = 1 / max(8 * L / mu, 512 * L * L_y / (mu_xy ** 2), 128 * L_xy ** 2 / (mu_xy ** 2))
         self.theta = 1 - rho_b
+        self.sigma = 1 / (1 / self.theta - 0.5)
         
 
     def step(self):
