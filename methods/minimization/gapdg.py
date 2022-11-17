@@ -4,6 +4,7 @@ from typing import List, Optional
 from oracles.minimization import BaseSmoothOracle, OracleLinearComb
 from .base import BaseDecentralizedMethod
 from .logger import LoggerDecentralized
+from scipy.stats import ortho_group
 
 
 class DAPDG(BaseDecentralizedMethod):
@@ -18,75 +19,76 @@ class DAPDG(BaseDecentralizedMethod):
     """
     def __init__(
             self,
-            oracle_list: List[BaseSmoothOracle],
+            oracle_list: tp.List[BaseSmoothOracle],
             x_0: np.ndarray,
             B: np.ndarray,
             W: np.ndarray,
             logger: LoggerDecentralized,
-            eta: float = 1.0,
-            alpha: float = 0.75,
-            beta: float = 0.01,
-            theta: float = 0.01,
-            sigma: float = 0.01,
             gamma: float = 0.75
     ):
         super().__init__(oracle_list, x_0, logger)
-        
-        assert eta > 0 and alpha > 0 and beta > 0
-        assert 0 < theta <= 1 and 0 < sigma <= 1
-        
-        self.eta = eta
-        self.alpha = alpha
-        self.beta = beta
-        self.theta = theta
-        self.sigma = sigma
-        self.gamma = gamma  # parameter for matrix A
-        
+                
         self.B = B
         self.W = W
         
         M = W.shape[0]
-        N = B.shape[1]
-        self.N, self.M = N, M
+        P, D = B.shape
+        self.D, self.M = D, M
         
         assert W.shape == (M, M)
-        assert self.x.shape == (M, N)
+        assert self.x.shape == (M, D)
         
-        self.x_f = np.zeros((M, N))
-        
+        self.gamma = gamma  # parameter for matrix A
+
         bold_B = np.kron(np.ones((M, M)), B)
-        bold_W = np.kron(W, np.ones((N, N)))
+        bold_W = np.kron(W, np.ones((D, D)))
         self.A = np.vstack([bold_B, gamma * bold_W])
         
-        # x = np.random.rand(N * M)
-        # self.x = A.T.dot(x)
-
+        L_mu_params = self.compute_l_mu(oracle_list, self.A)
+        self.init_parameters(**L_mu_params)
+        assert self.eta > 0 and self.alpha > 0 and self.beta > 0
+        assert 0 < self.tau <= 1 and 0 < self.sigma <= 1
         
-    def init_parameters(self, mu, mu_xy, L, L_xy, L_y=0):
-        self.alpha = mu
-        delta = max(mu_xy / (8 * np.sqrt(mu * L)), np.sqrt(L_y / L))
-        self.eta = min(0.25 / (mu + L * seft.sigma), 0.25 * delta / L_xy)
-        self.beta = min(1 / (2 * L), 1 / (2 * eta * L_xy ** 2))
-        rho_b = 1 / max(8 * L / mu, 512 * L * L_y / (mu_xy ** 2), 128 * L_xy ** 2 / (mu_xy ** 2))
-        self.theta = 1 - rho_b
-        self.sigma = 1 / (1 / self.theta - 0.5)
+        self.x_f = np.zeros((M, D))
+    
+        
+    def compute_l_mu(self, oracle_list, mat):
+        oracle = OracleLinearComb(oracle_list, [1 / len(oracle_list) for _ in oracle_list])
+        l_x = max([np.linalg.svd(oracle.A)[1].max() / oracle.den + oracle.regcoef for oracle in oracle_list])
+        mu_x = min([oracle.regcoef for oracle in oracle_list])
+        sing_vals = np.linalg.svd(mat)[1]
+        l_xy = sing_vals.max()**2
+        mu_xy = sing_vals[sing_vals >= 1e-10].min()**2
+        return dict(L_x=l_x, mu_x=mu_x, L_xy=l_xy, mu_xy=mu_xy)
+        
+    
+    def init_parameters(self, mu_x, mu_xy, L_x, L_xy):
+        delta = (mu_xy**2 / (2*mu_x*L_x))**.5
+        rho_b = (4 + 8 * max(L_xy / mu_xy * (L_x / mu_x)**.5,
+                             L_xy**2 / mu_xy**2)) ** (-1)
+        self.sigma = (mu_x / (2 * L_x))**.5
+        self.alpha = mu_x
+        # self.theta = 1 - rho_b
+        self.eta = min(1 / (4 * (mu_x + L_x * self.sigma)), delta / (4 * L_xy))
+        self.beta = 1 / (2 * self.eta * L_xy ** 2)
+        self.tau = (self.sigma**(-1) + 0.5)**(-1)
         
 
     def step(self):
         A = self.A
-        x = self.x.reshape(M * N)
-        x_f = self.x_f.reshape(M * N)
-        x_g = self.theta * x + (1 - self.theta) * x_f
+        x = self.x.reshape(self.M * self.D)
+        x_f = self.x_f.reshape(self.M * self.D)
+        x_g = self.tau * x + (1 - self.tau) * x_f
         
-        grad_F_x_g = self.grad_list(x_g.reshape(M, N)).reshape(N * M)  # np.array[N * M]
+        grad_F_x_g = self.grad_list(x_g.reshape(M, D)).reshape(D * M)  # np.array[D * M]
         
         x_new = x + self.eta * self.alpha * (x_g - x) - \
             self.eta * (self.beta * A.T.dot(A.dot(x)) - grad_F_x_g)
         
         x_f = x_g + self.sigma * (x_new - x)
         
-        self.x = x_new.reshape(M, N)
-        self.x_f = x_f.reshape(M, N)
+        self.x = x_new.reshape(self.M, self.D)
+        self.x_f = x_f.reshape(self.M, self.D)
         
         
     """
