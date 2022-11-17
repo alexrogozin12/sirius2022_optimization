@@ -83,7 +83,7 @@ class DAPDG(BaseDecentralizedMethod):
         grad_F_x_g = self.grad_list(x_g.reshape(M, D)).reshape(D * M)  # np.array[D * M]
         
         x_new = x + self.eta * self.alpha * (x_g - x) - \
-            self.eta * (self.beta * A.T.dot(A.dot(x)) - grad_F_x_g)
+            self.eta * (self.beta * A.T.dot(A.dot(x)) + grad_F_x_g)
         
         x_f = x_g + self.sigma * (x_new - x)
         
