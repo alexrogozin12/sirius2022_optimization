@@ -17,6 +17,7 @@ def vanish_random_edges_from_graph(G : nx.Graph, occupancy : float = 0.0, vanish
         # TODO: make this more optimal
         # MB - DONE but not sure (self-loop nodes could be removed earlier, but I this that is it slower way)
         while True:
+            if num_of_edges == 0: break
             edge = edges[random.randint(0, num_of_edges-1)]
             G.remove_edge(*edge)
             edges.remove(edge)
@@ -43,7 +44,11 @@ def add_random_edge_to_matrix(M : np.matrix) -> np.matrix:
     edges = [i for i in range(len(M))]
     e_len = len(M)
     while True:
-        e_1 = edges[random.randint(0, e_len  - 1)]
+        if e_len == 0: break
+        indx = random.randint(0, e_len - 1)
+        #print(indx)
+        #print(edges)
+        e_1 = edges[indx]
         edges_2 = [i for i in range(e_len) if M[e_1, i] == 0]
         e_len_2 = len(edges_2)
         if e_len_2 >= 1:
@@ -51,6 +56,7 @@ def add_random_edge_to_matrix(M : np.matrix) -> np.matrix:
             G.add_edge(e_1, e_2, weight=1)
             break
         else:
+            e_len -= 1
             edges.remove(e_1)
             continue
     M = nx.adjacency_matrix(G).todense()
