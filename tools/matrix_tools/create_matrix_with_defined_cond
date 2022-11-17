@@ -1,0 +1,17 @@
+import numpy as np
+from scipy.stats import ortho_group
+
+
+def create_matrix_with_L_mu(nx, ny, L_xy, mu_xy):
+    rvsx = lambda: ortho_group.rvs(dim=nx)
+    rvsy = lambda: ortho_group.rvs(dim=ny)
+
+    nA = min(nx, ny)
+    eigvals_A = np.linspace(mu_xy, L_xy, nA)
+    if nx < ny:
+        mA = np.concatenate((np.diag(eigvals_A), np.zeros([nx, ny - nA])), axis=1)
+    else:
+        mA = np.concatenate((np.diag(eigvals_A), np.zeros([nx - nA, ny])), axis=0)
+    A = rvsx().dot(mA).dot(rvsy()).T
+
+    return A
